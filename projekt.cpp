@@ -2,11 +2,31 @@
 #include <string>
 #include "cxxopts.hpp"
 
-class Specification {       // The class
-  public:             // Access specifier
-    int a;        // first key 'a' (int variable)
-    int b;        // second key 'b' (int variable)
-    std::string myString;  // Attribute (string variable)
+class Specification {         // The class
+  public:                     // Access specifier
+    int a;                    // first key 'a' (int variable)
+    int b;                    // second key 'b' (int variable)
+    bool encryption;          // flag 
+    bool decryption;          // flag
+    bool decryption_no_key;   // flag
+    std::string input_file;  // input file (string variable)
+    std::string output_file;  // input file (string variable)
+    std::string input;  // input content (string variable)
+    std::string output;  // output content (string variable)
+    
+    // Default Constructor
+    Specification()
+    {
+        a = 4;
+        b = 7;
+        encryption = false;
+        decryption = false;
+        decryption_no_key = false;
+        input_file = "input.txt";  // input file (string variable)
+        output_file = "output.txt";  // output file (string variable)
+        input = "Toto je retazec na sifrovanie a desifrovanie";  // input content (string variable)
+        output = "";  // output content (string variable)
+    }
 };
 
 cxxopts::ParseResult
@@ -19,21 +39,17 @@ parse(int argc, char* argv[])
       .positional_help("[optional args]")
       .show_positional_help();
 
-    bool encryption = false;
-    bool decryption = false;
-    bool decryption_no_key = false;
+    Specification spec;
 
     options
-      .allow_unrecognised_options()
       .add_options()
-      ("e", "sifrovani", cxxopts::value<bool>(encryption))
-      ("d", "desifrovani", cxxopts::value<bool>(decryption))
-      ("c", "desifrovani bez znalosti klice", cxxopts::value<bool>(decryption_no_key))
-      ("a", "prvni klic", cxxopts::value<int>(), "")
-      ("b", "druhy klic", cxxopts::value<int>(), "N")
-      ("f", "cesta k souboru", cxxopts::value<std::vector<std::string>>(), "FILE")
-      ("o", "vystupni soubor s otevrenym textem", cxxopts::value<std::string>()
-          ->default_value("a.out")->implicit_value("b.def"), "BIN")
+      ("e", "sifrovani", cxxopts::value<bool>(spec.encryption))
+      ("d", "desifrovani", cxxopts::value<bool>(spec.decryption))
+      ("c", "desifrovani bez znalosti klice", cxxopts::value<bool>(spec.decryption_no_key))
+      ("a", "prvni klic", cxxopts::value<int>(spec.a), "N")
+      ("b", "druhy klic", cxxopts::value<int>(spec.b), "N")
+      ("f", "cesta k souboru", cxxopts::value<std::string>(spec.input_file), "IN_FILE")
+      ("o", "vystupni soubor s otevrenym textem", cxxopts::value<std::string>(spec.output_file), "OUT_FILE")
       ("h,help", "Print help")
     ;
 
@@ -47,38 +63,45 @@ parse(int argc, char* argv[])
       exit(0);
     }
 
-    if (encryption)
+    if (spec.encryption)
     {
-      std::cout << "Saw option ‘e’ " << result.count("e") << " times " <<
-        std::endl;
+      std::cout << "Saw option ‘e’ " << result.count("e") << " times " << std::endl;
     }
 
-    if (decryption)
+    if (spec.decryption)
     {
       std::cout << "Saw option ‘d’ " << result.count("d") << " times " <<
         std::endl;
     }
 
+    if (spec.decryption_no_key)
+    {
+      std::cout << "Saw option ‘c’ " << result.count("c") << " times " <<
+        std::endl;
+    }
+
     if (result.count("f"))
     {
-      auto& ff = result["f"].as<std::vector<std::string>>();
-      std::cout << "Files" << std::endl;
-      for (const auto& f : ff)
-      {
-        std::cout << f << std::endl;
-      }
+      std::cout << "Input file = " << result["f"].as<std::string>()
+        << std::endl;
     }
 
     if (result.count("o"))
     {
-      std::cout << "Output = " << result["output"].as<std::string>()
+      std::cout << "Output file = " << result["o"].as<std::string>()
         << std::endl;
     }
 
     if (result.count("a"))
     {
-      std::cout << "a = " << result["a"].as<int>() << std::endl;
+      std::cout << "a = " << spec.a << std::endl;
     }
+
+     if (result.count("b"))
+    {
+      std::cout << "b = " << spec.b << std::endl;
+    }
+
 
     return result;
 
@@ -89,16 +112,23 @@ parse(int argc, char* argv[])
   }
 }
 
+std::string read_stdin()
+{
+    std::string line;
+ 
+    getline(std::cin, line);
+    
+    return line;
+}
+
 int main(int argc, char** argv)
 {
     auto result = parse(argc, argv);
     auto arguments = result.arguments();
     std::cout << "Saw " << arguments.size() << " arguments" << std::endl;
 
-    std::string line;
- 
-    getline(std::cin, line);
- 
+    std::string line = read_stdin();
+    
     std::cout << line << std::endl;
     return 0;
 }
