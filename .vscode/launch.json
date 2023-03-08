@@ -5,7 +5,7 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${fileDirname}/${fileBasenameNoExtension}",
-      "args": ["-e", "-d", "-a", "4", "<", "text.txt"],
+      "args": ["-e", "-d", "-a", "5", "-f", "text.txt"],
       "stopAtEntry": false,
       "cwd": "${fileDirname}",
       "environment": [],
