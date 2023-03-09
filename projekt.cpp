@@ -241,11 +241,11 @@ char decrypt_character(char c, int spec_a, int spec_b)
   return char(result);
 }
 
-std::string decryption(std::string& content, Specification& spec)
+std::string decryption(std::string& content, int spec_a, int spec_b)
 {
   std::string result = "";
   for (char& c : content) {
-    result.push_back(decrypt_character(c, spec.a, spec.b));
+    result.push_back(decrypt_character(c, spec_a, spec_b));
   }
   return result;
 }
@@ -273,30 +273,84 @@ public:                     // Access specifier
   }
 };
 
-void determine_keys(std::vector<std::pair<char, int>>& occurance_sorted) {
+void reverse_calc(char cipher1, char cipher2, char plain1, char plain2, std::vector<int>& a_keys, std::vector<int>& b_keys) {
+  std::pair<int, int> keys;
   std::list<int> possible_a_keys = { 1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25 };
-  std::vector<char> frequent_czech_chars = { 'E', 'A', 'O', 'I' }; //, 'N', 'S', 'T', 'R', 'L', 'K', 'V', 'P', 'Y', 'M', 'U', 'D', 'J', 'H', 'C', 'Z', 'B', 'G', 'F', 'X', 'Q' };
 
-  char most_frequent = occurance_sorted.back().first;
-  char c;
-  int a, b;
-  std::vector<DeterminedKeys> analysis;
+  int possible_a = (cipher1 - cipher2 + 'A') * mod_inverse(plain1 - plain2 + 'A', LIMIT_ALPHABET) % LIMIT_ALPHABET;
   for (auto& a_key : possible_a_keys) {
-    for (int b_key = 0; b_key < LIMIT_ALPHABET; b_key++) {
-      c = decrypt_character(most_frequent, a_key, b_key);
-      if (c == 'A') {
-        a = a_key;
-        b = b_key;
-      }
+    if (a_key == possible_a) {
+      keys.first = a_key;
     }
   }
-  std::cout << "Toto je kluc najdeny: " << a << " " << b << std::endl;
+  keys.second = ((cipher1 - keys.first + 'A') * plain1) % LIMIT_ALPHABET;
+
+  if (!std::count(a_keys.begin(), a_keys.end(), keys.first)) {
+    a_keys.push_back(keys.first);
+  }
+  if (!std::count(b_keys.begin(), b_keys.end(), keys.second)) {
+    b_keys.push_back(keys.second);
+  }
+
+}
+
+void bigram_analysis(std::string& content, std::vector<int>& potentional_a_keys, std::vector<int>& potentional_b_keys) {
+  std::vector<std::string> bigrams_frequent = { "st", "ni", "po", "ov", "ro", "en", "na" };
+  int b_lower_bound = potentional_b_keys.begin()[1]; // first possible b key in determined range
+  int b_upper_bound = potentional_b_keys.end()[-1]; // last possible b key in determined range
+
+  std::map<std::string, int> bigram_occurance;
+  for (auto& a_key : potentional_a_keys) {
+    for (int b_key = b_lower_bound; b_key <= b_upper_bound; b_key++) {
+      std::string decrypted = decryption(content, a_key, b_key);
+      for (int j = 0; j < decrypted.size() - 1; j++) {
+        std::string bigram = decrypted.substr(j, 2);
+        if (bigram_occurance.find(bigram) == bigram_occurance.end()) {
+          bigram_occurance[bigram] = 0;
+        }
+        else {
+          bigram_occurance[bigram]++;
+        }
+      }
+      // ASI ROBIM BULLSHIT TOTO - POKUSAL SOM SA TO SPRAVIT TAK ZE PO DOSTANI POTENCIONALNYCH KLUCOV Z SINGLE CHAR ODVODENI KLUCOV BUDEM APLIKOVAT MOZNE KLUCE NA TEN TEXT 
+      // A POTOM PO APLIKOVANI KLUCOV BY SOM ZNOVA SPOCITAL TU FREKVENCIU BIGRAMOV AZ POKYM BY SOM NEDOSTAL TAKE BIGRAMY KTORE SU NAJCASTEJSIE PRE CESTINU
+      // PRITOM STACI SPOCITAT FREKVENCIU BIGRAMOV NA ZACIATKU A POTOM UZ LEN APLIKOVAT POTENCIONALNE KLUCE NA TIE NAJCASTEJSIE BIGRAMY, JE TO MNOHOM EFEKTIVNEJSIE DO IT A EZ CLAP
+
+    }
+  }
+}
+
+void determine_keys(std::vector<std::pair<char, int>>& occurance_sorted, std::string& content) {
+  std::vector<char> frequent_czech_chars = { 'E', 'A', 'O', 'I' }; //, 'N', 'S', 'T', 'R', 'L', 'K', 'V', 'P', 'Y', 'M', 'U', 'D', 'J', 'H', 'C', 'Z', 'B', 'G', 'F', 'X', 'Q' };
+
+  char most_frequent = occurance_sorted.end()[-1].first;
+  char sec_most_frequent = occurance_sorted.end()[-2].first;
+  char third_most_frequent = occurance_sorted.end()[-3].first;
+  char fourth_most_frequent = occurance_sorted.end()[-4].first;
+  char c;
+  std::pair<int, int> keys;
+  std::vector<int> potentional_a_keys;
+  std::vector<int> potentional_b_keys;
+  std::pair<int, int> keys2;
+  std::pair<int, int> keys3;
+  std::pair<int, int> keys4;
+
+
+  std::vector<DeterminedKeys> analysis;
+  reverse_calc(most_frequent, sec_most_frequent, 'E', 'A', potentional_a_keys, potentional_b_keys);
+  reverse_calc(most_frequent, third_most_frequent, 'E', 'O', potentional_a_keys, potentional_b_keys);
+  reverse_calc(most_frequent, fourth_most_frequent, 'E', 'I', potentional_a_keys, potentional_b_keys);
+  reverse_calc(sec_most_frequent, third_most_frequent, 'A', 'O', potentional_a_keys, potentional_b_keys);
+  sort(potentional_b_keys.begin(), potentional_b_keys.end());
+
+  // std::cout << "Toto je kluc najdeny: " << a << " " << b << std::endl;
   //https://math.stackexchange.com/questions/375537/affine-encryption-and-frequency-analysis-need-help-seeing-where-im-going-wrong
 }
 
 void frequence_analysis(std::string& content)
 {
   int i = 0, j;
+  // SINGLE CHAR FREQUENCY
   std::vector<int> alphabet_frequency(26, 0);
   for (auto& c : content) {
     if (c >= 'A' && c <= 'Z') {
@@ -318,7 +372,9 @@ void frequence_analysis(std::string& content)
   //sort it
   sort(occurance_sorted.begin(), occurance_sorted.end(), sortbysec);
 
-  determine_keys(occurance_sorted);
+  // BIGRAM FREQUENCY
+
+  determine_keys(occurance_sorted, content);
   //for (i = 0; i < 26; i++)
   //  std::cout << occurance_sorted[i].first << " " << occurance_sorted[i].second << std::endl;
 
@@ -335,7 +391,7 @@ int main(int argc, char** argv)
     result = encryption(line, spec);
   }
   if (spec.decryption) {
-    result = decryption(line, spec);
+    result = decryption(line, spec.a, spec.b);
   }
   if (spec.decryption_no_key) {
     frequence_analysis(line);
