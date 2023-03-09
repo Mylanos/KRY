@@ -4,6 +4,7 @@
 #include "cxxopts.hpp"
 #include <math.h>
 #include <list>
+#include <cctype>
 
 int LIMIT_ALPHABET = 26;
 
@@ -29,7 +30,7 @@ public:                     // Access specifier
     decryption_no_key = false;
     input_file = "";  // input file (string variable)
     output_file = "";  // output file (string variable)
-    input = "Toto je default retazec na sifrovanie a desifrovanie";  // input content (string variable)
+    input = "";  // input content (string variable)
     output = "";  // output content (string variable)
   }
 };
@@ -50,42 +51,6 @@ void write_file(std::string& file_path)
   }
 }
 
-std::string read_file(std::string& file_path)
-{
-  std::fstream file;
-  std::string content;
-  file.open(file_path, std::ios::in);
-  if (!file)
-  {
-    std::cout << "Error parsing fiels: No such file";
-    exit(1);
-  }
-  else {
-    content.assign((std::istreambuf_iterator<char>(file)),
-      (std::istreambuf_iterator<char>()));
-    file.close();
-  }
-  return content;
-}
-// source and credit to https://www.javatpoint.com/prime-number-program-in-cpp
-void check_prime_number(int& number)
-{
-  if (number > LIMIT_ALPHABET) {
-    std::cerr << "Error parsing arguments: given key was out of range for given abeceda" << std::endl;
-    exit(1);
-  }
-  int i, m = 0;
-  m = number / 2;
-
-  for (i = 2; i <= m; i++)
-  {
-    if (number % i == 0)
-    {
-      std::cerr << "Error parsing arguments: given key was not a prime number" << std::endl;
-      exit(1);
-    }
-  }
-}
 Specification parse(int argc, char* argv[])
 {
   try
@@ -107,9 +72,10 @@ Specification parse(int argc, char* argv[])
       ("f", "cesta k souboru", cxxopts::value<std::string>(spec.input_file), "IN_FILE")
       ("o", "vystupni soubor s otevrenym textem", cxxopts::value<std::string>(spec.output_file), "OUT_FILE")
       ("h,help", "Print help")
+      ("input", "vstupni string", cxxopts::value<std::string>(spec.input))
       ;
 
-    options.parse_positional({ "f", "o", "b" });
+    options.parse_positional({ "input" });
 
     auto result = options.parse(argc, argv);
 
@@ -119,33 +85,6 @@ Specification parse(int argc, char* argv[])
       exit(0);
     }
 
-    if (spec.encryption)
-    {
-      std::cout << "Saw option ‘e’ " << result.count("e") << " times " << std::endl;
-    }
-
-    if (spec.decryption)
-    {
-      std::cout << "Saw option ‘d’ " << result.count("d") << " times " <<
-        std::endl;
-    }
-
-    if (spec.decryption_no_key)
-    {
-      std::cout << "Saw option ‘c’ " << result.count("c") << " times " <<
-        std::endl;
-    }
-
-    if (result.count("o"))
-    {
-      std::cout << "Output file = " << result["o"].as<std::string>()
-        << std::endl;
-    }
-    if (result.count("a"))
-    {
-      check_prime_number(spec.a);
-      std::cout << "a = " << spec.a << std::endl;
-    }
     return spec;
 
   }
@@ -153,26 +92,6 @@ Specification parse(int argc, char* argv[])
   {
     std::cerr << "error parsing arguments: " << e.what() << std::endl;
     exit(1);
-  }
-}
-
-std::string read_stdin()
-{
-  std::string line;
-
-  getline(std::cin, line);
-
-  return line;
-}
-
-std::string get_input(Specification& spec)
-{
-  std::string result;
-  if (!spec.input_file.empty()) {
-    return read_file(spec.input_file);
-  }
-  else {
-    return read_stdin();
   }
 }
 
@@ -251,27 +170,16 @@ std::string decryption(std::string& content, int spec_a, int spec_b)
 }
 
 // credit to https://www.geeksforgeeks.org/sort-vector-of-pairs-in-ascending-order-in-c/
-bool sortbysec(const std::pair<char, int>& a, const std::pair<char, int>& b)
+bool charSortBySec(const std::pair<char, int>& a, const std::pair<char, int>& b)
 {
   return (a.second < b.second);
 }
 
-class DeterminedKeys {
-public:                     // Access specifier
-  int a;                    // first key 'a' (int variable)
-  int b;                    // second key 'b' (int variable)
-  int numberOfMistakesSingleChar;          // flag 
-  int numberOfMistakesDoubleChar;          // flag 
+bool stringSortBySec(const std::pair<std::string, int>& a, const std::pair<std::string, int>& b)
+{
+  return (a.second < b.second);
+}
 
-  // Constructor
-  DeterminedKeys(int first_key, int second_key)
-  {
-    numberOfMistakesDoubleChar = 0;
-    numberOfMistakesSingleChar = 0;
-    a = first_key;
-    b = second_key;
-  }
-};
 
 void reverse_calc(char cipher1, char cipher2, char plain1, char plain2, std::vector<int>& a_keys, std::vector<int>& b_keys) {
   std::pair<int, int> keys;
@@ -312,73 +220,167 @@ void bigram_analysis(std::string& content, std::vector<int>& potentional_a_keys,
           bigram_occurance[bigram]++;
         }
       }
-      // ASI ROBIM BULLSHIT TOTO - POKUSAL SOM SA TO SPRAVIT TAK ZE PO DOSTANI POTENCIONALNYCH KLUCOV Z SINGLE CHAR ODVODENI KLUCOV BUDEM APLIKOVAT MOZNE KLUCE NA TEN TEXT 
-      // A POTOM PO APLIKOVANI KLUCOV BY SOM ZNOVA SPOCITAL TU FREKVENCIU BIGRAMOV AZ POKYM BY SOM NEDOSTAL TAKE BIGRAMY KTORE SU NAJCASTEJSIE PRE CESTINU
-      // PRITOM STACI SPOCITAT FREKVENCIU BIGRAMOV NA ZACIATKU A POTOM UZ LEN APLIKOVAT POTENCIONALNE KLUCE NA TIE NAJCASTEJSIE BIGRAMY, JE TO MNOHOM EFEKTIVNEJSIE DO IT A EZ CLAP
-
     }
   }
 }
 
-void determine_keys(std::vector<std::pair<char, int>>& occurance_sorted, std::string& content) {
-  std::vector<char> frequent_czech_chars = { 'E', 'A', 'O', 'I' }; //, 'N', 'S', 'T', 'R', 'L', 'K', 'V', 'P', 'Y', 'M', 'U', 'D', 'J', 'H', 'C', 'Z', 'B', 'G', 'F', 'X', 'Q' };
+std::pair<int, int> determine_keys(std::vector<std::pair<char, int>>& char_freq, std::vector<std::pair<std::string, int>>& bigram_freq, std::string& content) {
+  std::vector<char> freq_cz_chars = { 'E', 'A', 'O', 'I' };
 
-  char most_frequent = occurance_sorted.end()[-1].first;
-  char sec_most_frequent = occurance_sorted.end()[-2].first;
-  char third_most_frequent = occurance_sorted.end()[-3].first;
-  char fourth_most_frequent = occurance_sorted.end()[-4].first;
-  char c;
-  std::pair<int, int> keys;
+  // SINGLE CHAR KEYS ESTIMATION
+  std::vector<char> most_freq_chars;
+  for (int i = 1; i <= 4; i++) {
+    most_freq_chars.push_back(char_freq.end()[-i].first);
+  }
   std::vector<int> potentional_a_keys;
   std::vector<int> potentional_b_keys;
-  std::pair<int, int> keys2;
-  std::pair<int, int> keys3;
-  std::pair<int, int> keys4;
 
-
-  std::vector<DeterminedKeys> analysis;
-  reverse_calc(most_frequent, sec_most_frequent, 'E', 'A', potentional_a_keys, potentional_b_keys);
-  reverse_calc(most_frequent, third_most_frequent, 'E', 'O', potentional_a_keys, potentional_b_keys);
-  reverse_calc(most_frequent, fourth_most_frequent, 'E', 'I', potentional_a_keys, potentional_b_keys);
-  reverse_calc(sec_most_frequent, third_most_frequent, 'A', 'O', potentional_a_keys, potentional_b_keys);
+  reverse_calc(most_freq_chars[0], most_freq_chars[1], freq_cz_chars[0], freq_cz_chars[1], potentional_a_keys, potentional_b_keys);
+  reverse_calc(most_freq_chars[0], most_freq_chars[2], freq_cz_chars[0], freq_cz_chars[2], potentional_a_keys, potentional_b_keys);
+  reverse_calc(most_freq_chars[0], most_freq_chars[3], freq_cz_chars[0], freq_cz_chars[3], potentional_a_keys, potentional_b_keys);
+  reverse_calc(most_freq_chars[1], most_freq_chars[3], freq_cz_chars[1], freq_cz_chars[3], potentional_a_keys, potentional_b_keys);
+  reverse_calc(most_freq_chars[1], most_freq_chars[2], freq_cz_chars[1], freq_cz_chars[2], potentional_a_keys, potentional_b_keys);
+  reverse_calc(most_freq_chars[2], most_freq_chars[3], freq_cz_chars[2], freq_cz_chars[3], potentional_a_keys, potentional_b_keys);
   sort(potentional_b_keys.begin(), potentional_b_keys.end());
 
-  // std::cout << "Toto je kluc najdeny: " << a << " " << b << std::endl;
-  //https://math.stackexchange.com/questions/375537/affine-encryption-and-frequency-analysis-need-help-seeing-where-im-going-wrong
+  // BIGRAM KEYS ESTIMATION ACCORDING TO SINGLE CHAR ESTIMATION
+  std::vector<std::string> bigrams_frequent = { "ST", "NI", "PO", "OV", "RO", "EN", "NA", "JE", "PR", "TE", "LE", "KO", "NE", "OD" };
+  std::vector<std::string> most_freq_bigrams;
+  for (int i = 1; i <= 8; i++) {
+    most_freq_bigrams.push_back(bigram_freq.end()[-i].first);
+  }
+
+  int b_lower_bound = potentional_b_keys.begin()[0]; // first possible b key in determined range
+  int b_upper_bound = potentional_b_keys.end()[-1]; // last possible b key in determined range
+  int max_bigram_match_count = 0;
+  std::pair<int, int> best_keys;
+  for (auto& a_key : potentional_a_keys) {
+    for (int b_key = b_lower_bound; b_key <= b_upper_bound; b_key++) {
+      int bigram_match_count = 0;
+      for (auto& freq_bigram : most_freq_bigrams) {
+        std::string decrypted = decryption(freq_bigram, a_key, b_key);
+        if (std::find(bigrams_frequent.begin(), bigrams_frequent.end(), decrypted) != bigrams_frequent.end()) {
+          bigram_match_count++;
+        }
+      }
+      if (bigram_match_count > max_bigram_match_count) {
+        best_keys = { a_key, b_key };
+        max_bigram_match_count = bigram_match_count;
+      }
+    }
+  }
+  return best_keys;
 }
 
-void frequence_analysis(std::string& content)
+std::pair<int, int> frequence_analysis(std::string& content)
 {
   int i = 0, j;
   // SINGLE CHAR FREQUENCY
-  std::vector<int> alphabet_frequency(26, 0);
+  std::vector<int> char_frequency(26, 0);
   for (auto& c : content) {
     if (c >= 'A' && c <= 'Z') {
       j = c - 'A';
-      ++alphabet_frequency[j];
+      ++char_frequency[j];
     }
     if (c >= 'a' && c <= 'z') {
       j = c - 'a';
-      ++alphabet_frequency[j];
+      ++char_frequency[j];
     }
   }
 
-  std::vector<std::pair<char, int>> occurance_sorted;
-
+  // SORTING SINGLE CHAR FREQUENCY
+  std::vector<std::pair<char, int>> char_freq_sorted;
   //init vector of characters and their occurance
   for (i = 0; i < 26; i++)
-    occurance_sorted.push_back({ char(i + 'A'), alphabet_frequency[i] });
+    char_freq_sorted.push_back({ char(i + 'A'), char_frequency[i] });
+  sort(char_freq_sorted.begin(), char_freq_sorted.end(), charSortBySec);
 
-  //sort it
-  sort(occurance_sorted.begin(), occurance_sorted.end(), sortbysec);
 
   // BIGRAM FREQUENCY
+  std::vector<std::pair<std::string, int>>bigram_frequency;
+  for (int j = 0; j < content.size() - 2; j += 2) {
+    std::string bigram = content.substr(j, 2);
+    //skip last chars
+    if (bigram[1] == ' ') {
+      continue;
+    }
+    if (bigram[0] == ' ') {
+      j--;
+      continue;
+    }
+    auto it = std::find_if(bigram_frequency.begin(), bigram_frequency.end(), [&bigram](const std::pair<std::string, int>& p) { return p.first == bigram; });
+    if (it == bigram_frequency.end()) {
+      bigram_frequency.push_back({ bigram, 1 });
+    }
+    else {
+      (*it).second++;
+    }
 
-  determine_keys(occurance_sorted, content);
-  //for (i = 0; i < 26; i++)
-  //  std::cout << occurance_sorted[i].first << " " << occurance_sorted[i].second << std::endl;
+  }
+
+  // SORTING BIGRAM FREQUENCY
+  sort(bigram_frequency.begin(), bigram_frequency.end(), stringSortBySec);
 
 
+  return determine_keys(char_freq_sorted, bigram_frequency, content);
+}
+
+void print_result(std::string result, std::pair<int, int> determined_keys, Specification spec)
+{
+  if (!spec.output_file.empty()) {
+    std::ofstream myfile(spec.output_file);
+    if (myfile.is_open())
+    {
+      myfile << result;
+      std::cout << "a=" << determined_keys.first << ",b=" << determined_keys.second << std::endl;
+      myfile.close();
+    }
+    else {
+      std::cout << "Unable to open file";
+      exit(1);
+    }
+  }
+  else {
+    std::cout << result;
+  }
+}
+
+std::string read_file(std::string& file_path)
+{
+  std::fstream file;
+  std::string content;
+  file.open(file_path, std::ios::in);
+  if (!file)
+  {
+    std::cout << "Error parsing files: No such file";
+    exit(1);
+  }
+  content.assign((std::istreambuf_iterator<char>(file)), (std::istreambuf_iterator<char>()));
+  file.close();
+  return content;
+}
+
+std::string read_stdin()
+{
+  std::string line;
+
+  getline(std::cin, line);
+
+  return line;
+}
+
+std::string get_input(Specification& spec)
+{
+  std::string result;
+  if (!spec.input_file.empty()) {
+    return read_file(spec.input_file);
+  }
+  else if (!spec.input.empty()) {
+    return spec.input;
+  }
+  else {
+    return read_stdin();
+  }
 }
 
 int main(int argc, char** argv)
@@ -387,6 +389,7 @@ int main(int argc, char** argv)
 
   std::string line = get_input(spec);
   std::string result;
+  std::pair<int, int> determined_keys;
   if (spec.encryption) {
     result = encryption(line, spec);
   }
@@ -394,10 +397,10 @@ int main(int argc, char** argv)
     result = decryption(line, spec.a, spec.b);
   }
   if (spec.decryption_no_key) {
-    frequence_analysis(line);
+    determined_keys = frequence_analysis(line);
+    result = decryption(line, determined_keys.first, determined_keys.second);
   }
 
-  std::cout << result << std::endl;
-  std::cout << line << std::endl;
+  print_result(result, determined_keys, spec);
   return 0;
 }
