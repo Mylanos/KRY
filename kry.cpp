@@ -115,7 +115,7 @@ char encrypt_character(char c, Specification spec)
     result = a * x;
     result += b;
     result %= LIMIT_ALPHABET;
-    result += 'a';
+    result += 'A';
   }
   return char(result);
 }
@@ -155,7 +155,7 @@ char decrypt_character(char c, int spec_a, int spec_b)
   }
   else {
     result = a * ((int(c) + 'a' - b + 30)) % LIMIT_ALPHABET;
-    result += 'a';
+    result += 'A';
   }
   return char(result);
 }
