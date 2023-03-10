@@ -42,7 +42,7 @@ void write_file(std::string& file_path)
   file.open(file_path, std::ios::out);
   if (!file)
   {
-    std::cout << "Error parsing fiels: No such file";
+    std::cerr << "Error parsing fiels: No such file";
     exit(1);
   }
   else {
@@ -211,7 +211,7 @@ void bigram_analysis(std::string& content, std::vector<int>& potentional_a_keys,
   for (auto& a_key : potentional_a_keys) {
     for (int b_key = b_lower_bound; b_key <= b_upper_bound; b_key++) {
       std::string decrypted = decryption(content, a_key, b_key);
-      for (int j = 0; j < decrypted.size() - 1; j++) {
+      for (int j = 0; j < int(decrypted.size()) - 1; j++) {
         std::string bigram = decrypted.substr(j, 2);
         if (bigram_occurance.find(bigram) == bigram_occurance.end()) {
           bigram_occurance[bigram] = 0;
@@ -224,7 +224,7 @@ void bigram_analysis(std::string& content, std::vector<int>& potentional_a_keys,
   }
 }
 
-std::pair<int, int> determine_keys(std::vector<std::pair<char, int>>& char_freq, std::vector<std::pair<std::string, int>>& bigram_freq, std::string& content) {
+std::pair<int, int> determine_keys(std::vector<std::pair<char, int>>& char_freq, std::vector<std::pair<std::string, int>>& bigram_freq) {
   std::vector<char> freq_cz_chars = { 'E', 'A', 'O', 'I' };
 
   // SINGLE CHAR KEYS ESTIMATION
@@ -298,7 +298,7 @@ std::pair<int, int> frequence_analysis(std::string& content)
 
   // BIGRAM FREQUENCY
   std::vector<std::pair<std::string, int>>bigram_frequency;
-  for (int j = 0; j < content.size() - 2; j += 2) {
+  for (int j = 0; j < int(content.size()) - 2; j += 2) {
     std::string bigram = content.substr(j, 2);
     //skip last chars
     if (bigram[1] == ' ') {
@@ -322,7 +322,7 @@ std::pair<int, int> frequence_analysis(std::string& content)
   sort(bigram_frequency.begin(), bigram_frequency.end(), stringSortBySec);
 
 
-  return determine_keys(char_freq_sorted, bigram_frequency, content);
+  return determine_keys(char_freq_sorted, bigram_frequency);
 }
 
 void print_result(std::string result, std::pair<int, int> determined_keys, Specification spec)
@@ -336,7 +336,7 @@ void print_result(std::string result, std::pair<int, int> determined_keys, Speci
       myfile.close();
     }
     else {
-      std::cout << "Unable to open file";
+      std::cerr << "Unable to open file";
       exit(1);
     }
   }
@@ -352,7 +352,7 @@ std::string read_file(std::string& file_path)
   file.open(file_path, std::ios::in);
   if (!file)
   {
-    std::cout << "Error parsing files: No such file";
+    std::cerr << "Error parsing files: No such file";
     exit(1);
   }
   content.assign((std::istreambuf_iterator<char>(file)), (std::istreambuf_iterator<char>()));
