@@ -8,10 +8,10 @@ TARGET = server.py
 
 
 all:
-	$(PYTHON) $(TARGET) -p 8080 -t $(TYPE) -p $(PORT)
+	$(PYTHON) $(TARGET) -t $(TYPE) -p $(PORT)
 
 run: 
-	$(PYTHON) $(TARGET) -p 8080 -t $(TYPE) -p $(PORT)
+	$(PYTHON) $(TARGET) -t $(TYPE) -p $(PORT)
 
 help:
 	$(PYTHON) $(TARGET) -h

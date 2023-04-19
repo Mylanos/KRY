@@ -1,0 +1,16 @@
+{
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.autopep8"
+  },
+  "python.formatting.provider": "none",
+  "makefile.configurations": [
+    {
+      "name": "Default",
+      "makeArgs": []
+    },
+    {
+      "name": "Run client",
+      "makeArgs": ["TYPE=c", "PORT=54319"]
+    }
+  ]
+}
