@@ -3,7 +3,7 @@ PYTHON = python3
 
 #CFLAGS  = -g -Wall --std c++17 -Wextra -pedantic -Werror -g
 # The build target 
-TARGET = server.py
+TARGET = kry.py
 
 
 
