@@ -33,7 +33,7 @@ class CryptoUtils:
         # calc MD5
         md5_hash = hashlib.md5(message.encode()).digest()
         hash_len = len(md5_hash)
-        print("c:MD5=" + str(md5_hash))
+        print("c:MD5=" + bytes.hex(md5_hash))
         # 3  bytes for reserved hexa numbers
         padding_len = private_key.size_in_bytes() - hash_len - 3
 
@@ -42,7 +42,7 @@ class CryptoUtils:
             (self.generate_octet_string_except_zero(padding_len)) + b"\x00"
 
         padding_hash = padding_bytes + md5_hash
-        print("c:MD5_padding=" + str(padding_hash) + "\n")
+        print("c:MD5_padding=" + bytes.hex(padding_hash) + "\n")
 
         # sign padded hash with private key
         padded_hash_int = int.from_bytes(padding_hash, byteorder='big')
@@ -50,7 +50,7 @@ class CryptoUtils:
         signature_bytes = signature_int.to_bytes(
             (signature_int.bit_length() + 7) // 8, byteorder='big')
 
-        print("c:RSA_MD5_hash=" + str(signature_bytes) + "\n")
+        print("c:RSA_MD5_hash=" + bytes.hex(signature_bytes) + "\n")
         return signature_bytes
 
     # Hash the message using MD5
@@ -135,7 +135,7 @@ class CryptoUtils:
             (self.generate_octet_string_except_zero(padding_len)) + b"\x00"
 
         padding_aes = padding_bytes + aes_key
-        print("c:AES_key_IV_padding=" + str(padding_aes) + "\n")
+        print("c:AES_key_IV_padding=" + bytes.hex(padding_aes) + "\n")
 
         # sign padded key with private key
         padded_aes_int = int.from_bytes(padding_aes, byteorder='big')
@@ -156,7 +156,7 @@ class CryptoUtils:
         cipher = AES.new(aes_key, AES.MODE_CBC, iv)
         ciphertext = cipher.encrypt(padded_message)
 
-        print("c:AES_cipher=" + str(ciphertext) + "\n")
+        print("c:AES_cipher=" + bytes.hex(ciphertext) + "\n")
         return ciphertext
 
     def symmetric_decryption(self, message, aes_key, iv):
@@ -237,11 +237,11 @@ class MyClient:
                     self.socket.connect((self.ip_addr, self.port))
                     print(f"c:Successfully connected server")
                     print(
-                        f"c:RSA_public_key_sender= {self.RSA_pubkey.export_key('DER')}\n")
+                        f"c:RSA_public_key_sender= {bytes.hex(self.RSA_pubkey.export_key('DER'))}\n")
                     print(
-                        f"c:RSA_private_key_sender= {self.RSA_privkey.export_key('DER')}\n")
+                        f"c:RSA_private_key_sender= {bytes.hex(self.RSA_privkey.export_key('DER'))}\n")
                     print(
-                        f"RSA_public_key_receiver= {self.RSA_pubkey_reciever.export_key('DER')}\n")
+                        f"RSA_public_key_receiver= {bytes.hex(self.RSA_pubkey_reciever.export_key('DER'))}\n")
                     break
                 except:
                     print(
@@ -262,16 +262,16 @@ class MyClient:
                 session_iv = self.c_util.generate_octet_string(16)
 
                 # generate symmetric key and encrypt the message with signaure using clients private RSA key
-                print("c:AES_key=" + str(self.aes_key) + "\n")
+                print("c:AES_key=" + self.aes_key.hex() + "\n")
                 cyphertext = self.c_util.symmetric_encryption(
                     package, self.aes_key, session_iv)
 
                 # encrypt iv and aes key with public key of receiver
                 encrypted_aesKey_iv = self.c_util.rsa_encrypt_aes_key(
                     self.aes_key + session_iv, self.RSA_pubkey_reciever)
-                print("c:RSA_AES_key_IV=" + str(encrypted_aesKey_iv) + "\n")
+                print("c:RSA_AES_key_IV=" + bytes.hex(encrypted_aesKey_iv) + "\n")
                 package2 = encrypted_aesKey_iv + cyphertext
-                print("c:ciphertext=" + str(package2) + "\n")
+                print("c:ciphertext=" + bytes.hex(package2) + "\n")
                 self.socket.send(package2)
 
         except KeyboardInterrupt:
@@ -307,35 +307,37 @@ class MyServer():
 
                 print(f"s:Client has joined\n")
                 print(
-                    f"s:RSA_public_key_receiver= {self.RSA_pubkey.export_key('DER')}\n")
+                    f"s:RSA_public_key_receiver= {bytes.hex(self.RSA_pubkey.export_key('DER'))}\n")
                 print(
-                    f"s:RSA_private_key_receiver= {self.RSA_privkey.export_key('DER')}\n")
+                    f"s:RSA_private_key_receiver= {bytes.hex(self.RSA_privkey.export_key('DER'))}\n")
                 print(
-                    f"s:RSA_public_key_sender= {self.RSA_pubkey_sender.export_key('DER')}\n")
+                    f"s:RSA_public_key_sender= {bytes.hex(self.RSA_pubkey_sender.export_key('DER'))}\n")
                 try:
                     while True:
                         # Receive the message from the client
                         response = client_socket.recv(1024)
-                        print(f"s:ciphertext= {str(response)}\n")
+                        print(f"s:ciphertext= {bytes.hex(response)}\n")
                         cipher_aes_iv = response[:256]
                         ciphertext = response[256:]
-                        print(f"s:RSA_AES_key_IV= {str(cipher_aes_iv)}\n")
-                        print(f"s:AES_cipher= {str(ciphertext)}\n")
+                        print(
+                            f"s:RSA_AES_key_IV= {bytes.hex(cipher_aes_iv)}\n")
+                        print(f"s:AES_cipher= {bytes.hex(ciphertext)}\n")
 
                         aes_key, session_iv = self.c_util.decrypt_rsa(
                             cipher_aes_iv, self.RSA_privkey, self.RSA_privkey.d, self.RSA_privkey.n)
-                        print(f"s:AES_key= {str(aes_key)}\n")
+                        print(f"s:AES_key= {bytes.hex(aes_key)}\n")
 
                         decrypted_cyphertext = self.c_util.symmetric_decryption(
                             ciphertext, aes_key, session_iv)
-                        print(f"s:text_hash= {str(decrypted_cyphertext)}\n")
+                        print(
+                            f"s:text_hash= {bytes.hex(decrypted_cyphertext)}\n")
 
                         message = decrypted_cyphertext[256:]
-                        print(f"s:plaintext= {str(message)}\n")
+                        print(f"s:plaintext= {message.decode('utf-8')}\n")
 
                         signature = decrypted_cyphertext[:256]
                         content = self.c_util.generate_MD5(message)
-                        print(f"s:MD5= {str(content)}\n")
+                        print(f"s:MD5= {bytes.hex(content)}\n")
                         if (self.c_util.verify_signature(content, signature, self.RSA_pubkey_sender)):
                             print(
                                 "The integrity of the message has not been compromised.\n")

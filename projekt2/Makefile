@@ -6,7 +6,6 @@ PYTHON = python3
 TARGET = kry.py
 
 
-
 all:
 	$(PYTHON) $(TARGET) -t $(TYPE) -p $(PORT)
 

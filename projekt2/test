@@ -1,0 +1,58 @@
+class MyClient:
+    def __init__(self, port=8080, ip_addr='localhost', pubkey, privkey, pubkeyreceiver):
+        self.c_util = CryptoUtils()
+        self.RSA_pubkey, self.RSA_privkey = pubkey, privkey
+        self.RSA_pubkey_reciever = pubkeyreceiver
+        self.aes_key = self.c_util.generate_octet_string(AES_key_size//8)
+        self.port = port
+        self.ip_addr = ip_addr
+
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.public_key = None
+        self.private_key = None
+        self.public_key_receiver = None
+        self.run()
+
+    def run(self):
+
+        try:
+            while True:
+                try:
+                    self.socket.connect((self.ip_addr, self.port))
+                    print(f"c:Successfully connected server")
+                    break
+                except:
+                    print(
+                        "ERROR: Failed to establish conection. Gonna sleep briefly & try again")
+                    time.sleep(10)
+                    continue
+            while True:
+
+                # get a message
+                message = input("c:Enter input: ")
+                self.generate_new_aes()
+                # hash it and create signature
+                signature = self.c_util.rsa_sign_md5_with_padding(
+                    message, self.RSA_privkey)
+
+                # create a random iv for the session
+                package = signature + message.encode('utf8')
+                session_iv = self.c_util.generate_octet_string(16)
+
+                # generate symmetric key and encrypt the message with signaure using clients private RSA key
+                cyphertext = self.c_util.symmetric_encryption(
+                    package, self.aes_key, session_iv)
+
+                # encrypt iv and aes key with public key of receiver
+                encrypted_aesKey_iv = self.c_util.rsa_encrypt_aes_key(
+                    self.aes_key + session_iv, self.RSA_pubkey_reciever)
+                
+                package2 = encrypted_aesKey_iv + cyphertext
+                self.socket.send(package2)
+
+        except KeyboardInterrupt:
+            print("Client is being stopped.")
+            self.socket.close()
+
+    def generate_new_aes(self):
+        self.aes_key = self.c_util.generate_octet_string(AES_key_size//8)
